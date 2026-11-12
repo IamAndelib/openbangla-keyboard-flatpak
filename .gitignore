@@ -10,3 +10,6 @@
 *.flatpak
 # Local-only Claude settings
 /.claude/settings.local.json
+# Python bytecode
+__pycache__/
+*.pyc
