@@ -135,7 +135,7 @@ tracks the test context's own IM via its `CurrentIM` signal) and `scripts/stress
 | soak: 20k random keys (letters, Shift+caps, space, BS, arrows/Tab, punctuation, digits, Return, Ctrl+BS) | PASS: 0 losses, 0 D-Bus errors, worst 1.2 ms, RSS 21.6→21.9 MB | PASS (worst 3.7 ms) |
 | burst: 4,800 keys / 800 words | PASS: 800/800 committed, 0.80 ms/key | PASS |
 
-**Conclusion (pending expert review):** the engine is stable under load. The "switches to English" symptoms come from two
+**First conclusion (superseded by the reviews below):** the engine is stable under load. The "switches to English" symptoms come from two
 Fcitx5 *defaults* (Left-Shift AltTrigger; per-context input state), not from the add-on.
 
 **Incidents during testing (fixed):**
@@ -146,3 +146,58 @@ Fcitx5 *defaults* (Left-Shift AltTrigger; per-context input state), not from the
   in-memory state). The runner now exports the XDG dirs inside the sandbox and refuses to start otherwise; a before/after
   fingerprint of the user's Fcitx5 config and data dirs was identical across the fixed runs.
 - Anomaly under review: some learned selections show duplicated output (`bei → 🅱️েই🅱️েই`, `vei → vেইvেই`).
+
+### 6.1 Expert reviews (3 independent agents, 2026-11-12)
+**Verdict:** the user's symptom is explained by Fcitx5 defaults. The engine is **not** stable: it has three verified
+classes of crash that kill the whole Fcitx5 daemon (panics can't unwind across riti's `extern "C"` FFI) and two
+verified silent text-loss bugs. The random soak never reached these paths. The host journal and coredumpctl
+(30 days, read-only) show no crash of the live daemon; all 18 KWin "Input Method crashed" entries were SIGTERM restarts.
+
+**Engine and riti bugs (all upstream; develop eea66aff, riti afee54a):**
+
+| # | Severity | Where | Trigger, then effect | Verified |
+| --- | --- | --- | --- | --- |
+| 1 | crash, **persists on disk** | riti `phonetic/suggestion.rs:266` `.last().unwrap()`; value saved by `method.rs:116-125` with a key/value split mismatch | Type `:)` and pick the literal candidate; `{":":""}` is saved. Later typing `:e` (any suffix) aborts fcitx5, and it aborts again after every restart. | yes, independently reproduced (`panicked at src/phonetic/suggestion.rs:266:55`) |
+| 2 | crash (SIGSEGV) | `openbangla.cpp:337-339`, `142-143` null candidate list; `context()` line 407 never assigns `currentIC_` (dead guard), so riti session state is global | Keys reach a second input context while the first is mid-word | yes (reviewers; isolated) |
+| 3 | crash | riti `unwrap`s: corrupt or truncated `phonetic-candidate-selection.json` (`method.rs:32`), an unwritable file (`method.rs:126-130`, non-atomic `fs::write`), a missing `layout/path` file (`fixed/method.rs:109`), a torn `autocorrect.json` (`method.rs:143`) | Disk full, a crash mid-write, or a host Keyboard.conf with `/usr/share` paths: fcitx5 aborts on every activation | yes |
+| 4 | text loss | `commit()` uses page-local `cursorIndex()` (-1 after paging) | `kotha`, NextPage, Space: nothing committed, the session stays open, and the next word merges (`কথার`) | yes, independently reproduced |
+| 5 | data corruption | riti `suggestion.rs:258-293`: suffix loop has no `break` and writes derived values back into `selections` | Learned preferences stop applying to inflected words, and doubled strings get stored (`bei → 🅱️েই🅱️েই`) | yes |
+| 6 | text loss | no `deactivate` override; `reset()` drops the preedit | Switching IM mid-word (Shift-tap, Ctrl+Space, SetCurrentIM) loses the word | yes |
+| 7 | perf | `openbangla.cpp:492` uses `<`, so Keyboard.conf is re-read at every word start | Stat + INI parse + `update_engine` per word | yes |
+| 8 | memory | unknown (leak or allocator) | RSS 21.5 → 40 MB over 350k keys, roughly linear; needs heaptrack | yes (growth only) |
+| 9 | growth | selection file rewritten in full on every non-default pick, unbounded | 1230 entries / 30 KB after ~650k random keys | yes |
+
+**Fcitx5 configuration (source-cited, verified in isolation):** the recommended user config is
+```
+[Hotkey]
+AltTriggerKeys=
+
+[Behavior]
+ShareInputState=All
+ActiveByDefault=True
+```
+- `ActiveByDefault` exists in 5.1.23 and makes new contexts start active.
+- Ctrl+Space remains the toggle. Shift+letter typing is unaffected.
+- An add-on **cannot** ship global defaults: the first `fcitx5/config` in XDG_CONFIG_HOME/XDG_CONFIG_DIRS wins, with no merging.
+  The only data-dir hook is `share/fcitx5/default/<locale>` for a first-run profile. The recommendation is documentation; an
+  opt-in setup helper via `Controller1.SetConfig("fcitx://config/global", …)` works (verified on a private bus).
+- KWin input-method-v1 in fcitx5 uses one Wayland IC plus per-Plasma-window virtual ICs (`DetectApplication`), so
+  "per-IC state" means per-window state. Field changes within a window keep state.
+
+**Tray icon:** the SNI sends `IconName=openbangla-keyboard`, and the host theme lacks it because extensions can't export icons.
+- Correct fix: upstream `Icon=fcitx-openbangla` plus an icon layout under `data/icons/<size>/apps/`, then a hand-written
+  PR adding OBK to `fcitx5-all-icons` in flathub/org.fcitx.Fcitx5 (the Unikey/McBopomofo precedent).
+- Interim options: Classic UI "Prefer Text Icon" (renders বা), or copying the PNG to `~/.local/share/icons/hicolor` on the host.
+
+**Harness gaps to fix (from the methodology review):**
+- capabilities 0 (Wayland uses 0x72), so preedit and focus-out paths go untested
+- "stolen" focus never fails in isolation
+- no content check in soak or burst
+- the RSS threshold can't detect slope
+- concurrent runs of the same profile clobber each other
+- the `pgrep fcitx5-bin` fallback could match the live daemon
+- isolated D-Bus ICs have no focus group (two contexts can be focused at once)
+- a nested `kwin_wayland --virtual` run is the only faithful end-to-end test
+
+Reviewer reproductions are in the session scratchpad (`repro/repro.c`, `e2e/e2e.py`, `extra.py`, `harness/`, `iso.sh`). Copy them
+into `tests/` if adopted.
