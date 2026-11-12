@@ -34,7 +34,7 @@ echo "cmake: \$(cmake --version | head -1)  cargo: \$(cargo --version)  rustc: \
 if [[ "$kind" == shell ]]; then exec bash -i; fi
 rm -rf build stage
 cmake -S "$src" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-      -DCMAKE_INSTALL_PREFIX=/app/addons/OpenBangla $cmake_opts
+      -DCMAKE_INSTALL_PREFIX=/app/addons/OpenBangla -DCMAKE_INSTALL_LIBDIR=lib $cmake_opts
 cmake --build build
 DESTDIR="$work/stage" cmake --install build
 find stage -type f | sort

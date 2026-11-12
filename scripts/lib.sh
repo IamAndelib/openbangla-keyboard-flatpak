@@ -22,6 +22,14 @@ die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 
 in_container() { [[ -f /run/.containerenv || -n "${CONTAINER_ID:-}" ]]; }
 
+# Inside distrobox, Fedora's flatpak only sees the container's (empty) system
+# installation. Point it at the host's, read-only, so the installed
+# org.fcitx.Fcitx5 app (the add-on's "runtime") is found. We only ever write
+# to the --user installation, which lives in the shared $HOME.
+if in_container && [[ -d /run/host/var/lib/flatpak/app ]]; then
+    export FLATPAK_SYSTEM_DIR=/run/host/var/lib/flatpak
+fi
+
 # Re-exec the calling script inside the dev container when run on the host.
 # Usage: ensure_container "$0" "$@"
 ensure_container() {

@@ -33,7 +33,8 @@ opening or writing Flathub PRs, commits, descriptions or review replies
 
 ## Dev environment
 All builds run in the distrobox container `dev` (Fedora 45, privileged, bwrap works).
-It sees the host's system Flatpak installation. Builds install with `--user` into
+The host's system Flatpak installation is read through `FLATPAK_SYSTEM_DIR=/run/host/var/lib/flatpak`
+(set by `scripts/lib.sh`; Fedora's flatpak in the container otherwise sees none). Builds install with `--user` into
 `~/.local/share/flatpak`, which is shared with the host. Scripts re-exec themselves
 in `dev` when called from the host.
 
@@ -45,6 +46,9 @@ in `dev` when called from the host.
 | Restart host Fcitx5 + verify add-on | `scripts/test-run.sh` |
 | Cargo sources (maintainer runs) | `scripts/gen-cargo-sources.sh -o <dir> [obk-checkout]` |
 | Tester bundle | `scripts/bundle.sh` → `out/*.flatpak` |
+| Probe: build upstream in the Fcitx5 SDK, no manifest | `scripts/probe-build.sh engine\|gui\|shell` |
+| Probe: install staged build as local extension | `scripts/probe-install.sh engine\|gui` / `--remove` |
+| Headless typing test (D-Bus) | `distrobox enter dev -- python3 scripts/probe-type.py "ami" --expect "আমি"` |
 
 Ignored working dirs: `upstream/` (OBK clone for probes and upstream PRs), `flathub/`,
 `build-dir/`, `.flatpak-builder/`, `repo/`, `out/`.

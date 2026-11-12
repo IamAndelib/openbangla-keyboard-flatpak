@@ -24,6 +24,11 @@ The maintainer makes the edit.
    `আমি বাংলায় গান গাই`. Test a Flatpak app (Kate) and a native app.
 
 ## Debugging notes
+- Manifest-free probes: `scripts/probe-build.sh engine|gui` → `scripts/probe-install.sh engine|gui`
+  (local remote `obk-probe`; remove with `--remove` before installing a real build) → `scripts/test-run.sh`.
+- Running the GUI or any one-off command in the Fcitx5 sandbox: always pass `flatpak run --die-with-parent ...`,
+  or the sandbox outlives `timeout` and leaves an extra `org.fcitx.Fcitx5` instance. Never `flatpak kill`
+  just to stop a probe, because that also kills the user's input method and KWin won't respawn it (use test-run.sh's restart).
 - Build env for probes without a manifest: `flatpak run --devel --command=bash org.fcitx.Fcitx5`
   gives KDE SDK 6.11 with the Fcitx5 headers and CMake config at `/app`.
 - Add-on files resolve under `/app/addons/OpenBangla/{lib/fcitx5,share,bin}` through the Fcitx5 launcher

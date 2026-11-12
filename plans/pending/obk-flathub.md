@@ -211,6 +211,12 @@ Verified when: the Flathub PR is merged, `flathub/org.fcitx.Fcitx5.Addon.OpenBan
 - Optional workspace CI (GitHub Actions) builds the user's manifest nightly against upstream `develop` to catch breakage early. Claude may write the workflow because it lives in the workspace repo, not Flathub.
 - GUI release: once upstream ships an optional/Qt6 GUI (or the planned Rust GUI), add it to the add-on and test `openbangla-gui` via the fcitx configure button (`ExternalOption BIN_DIR/openbangla-gui`). Don't clean `/bin` once the GUI ships.
 
+## Execution notes (deviations and discoveries)
+- 2026-11-12: Installing `flatpak-builder` in `dev` brought in Fedora's real `flatpak`, which hides the host system installation. Fix: `FLATPAK_SYSTEM_DIR=/run/host/var/lib/flatpak` (set in `scripts/lib.sh`).
+- 2026-11-12: `flatpak kill org.fcitx.Fcitx5` is NOT respawned by KWin. Restart it by toggling `kwinrc [Wayland] InputMethod` with `kwriteconfig6 --notify` (empty, then the value), then restore the original kwinrc. `scripts/test-run.sh` needs this change.
+- 2026-11-12: Added manifest-free probe harnesses: `scripts/probe-build.sh`, `scripts/probe-install.sh` (local `obk-probe` remote), `scripts/probe-type.py` (headless D-Bus typing test).
+- 2026-11-12 (re-derive, for the user): the Qt6 GUI port is only 7 files / +14 −11 and runs in the sandbox. If upstream merges it, v1 could include the GUI instead of being engine-only.
+
 ## Not yet specified
 - Phase 1.4: whether engine defaults are usable without the GUI. This decides v1's scope (Checkpoint A).
 - Phase 2: the maintainer's response, and whether upstream wants to own the Flathub add-on itself. If so, the user becomes co-maintainer or helper instead.
@@ -244,9 +250,9 @@ Verified when: the Flathub PR is merged, `flathub/org.fcitx.Fcitx5.Addon.OpenBan
 ## Progress
 | Phase | Status |
 | --- | --- |
-| 0 Environment + Claude setup | pending |
-| 1 Feasibility probes | pending |
-| A Checkpoint | pending |
+| 0 Environment + Claude setup | **done** 2026-11-12 (`devenv-setup.sh --check` green; repo pushed) |
+| 1 Feasibility probes | **done** 2026-11-12, all PASS (see docs/research.md §5); manual in-app typing + tray icon check pending user |
+| A Checkpoint | **in progress**, results presented 2026-11-12 |
 | 2 Upstream engagement | pending |
 | 3 Packaging (user) | pending |
 | 4 Test matrix + interim bundle | pending |

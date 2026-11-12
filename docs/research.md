@@ -92,7 +92,7 @@ From the human-written manifests at github.com/flathub/org.fcitx.Fcitx5.Addon.{U
 - Container `dev` (distrobox, Fedora 45 toolbox image):
   - runs with `--privileged`, `label=disable` and `unmask=all`
   - `bwrap --unshare-all` works and `/dev/fuse` is present
-  - sees the host's system Flatpak installation (`org.fcitx.Fcitx5` visible)
+  - sees the host's system Flatpak installation via `FLATPAK_SYSTEM_DIR=/run/host/var/lib/flatpak` (after `dnf install flatpak-builder` brings in the real flatpak package, which otherwise sees only the container's empty system dir)
   - `flatpak-spawn` and `distrobox-host-exec` are available
 - Tooling pinned: flatpak-builder-tools `cargo/flatpak-cargo-generator.py` @ `9d86d336a39b9af38b86f114b6ce5820fe260f91`.
 
@@ -107,13 +107,13 @@ _Phase 1 results go here (step, date, PASS/FAIL, evidence)._
   so power users can hand-edit the INI keys (`layout/path`, `settings/...`) without the GUI.
 - The fcitx engine links only `Fcitx5::Core riti Pthread DL`. `src/shared` (Qt5::Core) is used by the
   IBus engine and the GUI, and `src/platform` (second Rust crate) only by the GUI.
-- Probe patch (branch `probe/engine-only` in `upstream/`) adds `option(ENABLE_GUI ON)`, which gates
+- Probe patch (branch `probe/engine-only` in `upstream/`, exported to `docs/probes/0001-engine-only-ENABLE_GUI.patch`) adds `option(ENABLE_GUI ON)`, which gates
   `find_package(Qt5)`, `src/platform`, `src/frontend` and `src/shared`. This is the draft for upstream PR-a.
 
 | Probe | Result | Evidence |
 | --- | --- | --- |
-| 1.1 build shell (KDE 6.11 SDK + fcitx headers + cargo) | pending | |
-| 1.2 engine-only build | pending | |
+| 1.1 build shell (KDE 6.11 SDK + fcitx headers + cargo) | **PASS** (2026-11-12) | `scripts/probe-build.sh`: `flatpak run --devel org.fcitx.Fcitx5` with the user rust-stable//25.08 extension on PATH. cmake 4.4.4, GCC 15.2.0, rustc/cargo 1.98.1. `find_package(Fcitx5Core)` resolves from `/app`. |
+| 1.2 engine-only build | **PASS** (2026-11-12) | `probe-build.sh engine` (`-DENABLE_FCITX=ON -DENABLE_GUI=OFF`, patch `docs/probes/0001`): builds in ~25 s and installs `lib/fcitx5/openbangla.so`, the addon/inputmethod confs, 7 layouts, 4 data JSONs, icons, a desktop file and the metainfo. The only warnings are 6× deprecated `StandardPath` (fcitx 5.1.23); this is a future-compat risk worth an upstream port to `StandardPaths`. **Gotcha:** without `-DCMAKE_INSTALL_LIBDIR=lib` the .so lands in `lib64/`, which the Fcitx5 launcher does not search. flatpak-builder passes `lib` for cmake modules by default. |
 | 1.3 offline cargo sources | **PASS** (2026-11-12) | `scripts/gen-cargo-sources.sh`: riti lock generated (45 pkgs; okkhor 0.8.2, once_cell 1.20.3 pinned by semver), 91 source entries; platform 209 entries. `cargo fetch --locked` then `cargo build --release --locked --offline` of riti → `libriti.a` (cargo 1.99.1). Only riti is needed for the engine-only build, because `src/platform` is linked only by the GUI. |
-| 1.4 runtime typing test | pending | |
-| 1.5 Qt6 GUI port sizing | pending | |
+| 1.4 runtime typing test | **PASS (headless)**; in-app pending user | `probe-install.sh engine` (manifest-free `build-export` of the staged files, installed `--user` from local remote `obk-probe`). The host Fcitx5 mounts `/app/addons/OpenBangla`, `ldd` is clean, and Controller1 lists addon `openbangla` and IM `openbangla` ("OpenBangla Keyboard", icon `openbangla-keyboard`). `scripts/probe-type.py` (D-Bus input-context frontend): `ami banglay gan gai` → `আমি বাংলায় গান গাই` **PASS** with no config (default Avro Phonetic); `amar sonar bangla, ami tomay valobasi.` → `আমার সোনার বাংলা, আমি তমায় ভালবাসি।`. A hand-written `~/.var/app/org.fcitx.Fcitx5/config/OpenBangla/Keyboard.conf` with `[layout] path=/app/addons/OpenBangla/share/openbangla-keyboard/layouts/Probhat.json` + `ReloadAddonConfig` → `kj` = `কজ` (fixed layout works without the GUI). User data dir: `~/.var/app/org.fcitx.Fcitx5/data/openbangla-keyboard`. The engine emits precomposed U+09DF য়, so compare under NFC. **Still to do (user):** typing in real apps (Kate Flatpak, native Qt/GTK, XWayland) and the tray icon. |
+| 1.5 Qt6 GUI port sizing | **PASS** (2026-11-12) | Branch `probe/qt6` (`docs/probes/0002`): **7 files, +14/−11**. Changes: `find_package(QT NAMES Qt6 Qt5)` + `Qt${QT_VERSION_MAJOR}::` targets; `QStringRef`→`auto` and `contains(QLatin1String(..))` in LayoutConverter; `#include <QActionGroup>` in TopBar; `QJsonValue::toVariant()` in AutoCorrectDialog. Also fixes an upstream bug exposed by Qt6: `configure_file("${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in")` breaks once `CMAKE_MODULE_PATH` is a list, so it now uses `${CMAKE_SOURCE_DIR}/cmake`. Builds against Qt 6.11.3 with only deprecation warnings (QMouseEvent x/y, StandardPath). `openbangla-gui` runs in the Fcitx5 sandbox (offscreen, alive at 8 s) and writes `~/.var/app/org.fcitx.Fcitx5/config/OpenBangla/Keyboard.conf`, the same file the engine reads. It is not on the sandbox PATH (only the fcitx5 wrapper adds addon `bin/`), but fcitx's ExternalOption uses the absolute `BIN_DIR`. `--setup-system`/PlatformConfig only runs on that explicit flag. |
