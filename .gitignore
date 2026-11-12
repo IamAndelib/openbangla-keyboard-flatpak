@@ -1,0 +1,12 @@
+# Upstream clone used for probes and upstream PRs
+/upstream/
+# The Flathub packaging repo: separate git repo, hand-written by the maintainer
+/flathub/
+# flatpak-builder outputs
+/build-dir/
+/.flatpak-builder/
+/repo/
+/out/
+*.flatpak
+# Local-only Claude settings
+/.claude/settings.local.json

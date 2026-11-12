@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/devenv-setup.sh:*)",
+      "Bash(scripts/build.sh:*)",
+      "Bash(scripts/lint.sh:*)",
+      "Bash(scripts/test-run.sh:*)",
+      "Bash(scripts/bundle.sh:*)",
+      "Bash(distrobox enter dev -- scripts/*)",
+      "Bash(flatpak list:*)",
+      "Bash(flatpak info:*)",
+      "Bash(flatpak ps:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)"
+    ],
+    "deny": [
+      "Edit(flathub/**)",
+      "Write(flathub/**)",
+      "NotebookEdit(flathub/**)"
+    ]
+  }
+}
