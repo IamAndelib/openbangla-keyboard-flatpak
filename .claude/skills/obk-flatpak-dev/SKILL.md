@@ -18,8 +18,8 @@ The maintainer makes the edit.
 1. `scripts/devenv-setup.sh --check`. If anything is missing, run it without `--check`.
 2. `scripts/build.sh`. Logs go to `out/build.log`. On `rofiles-fuse` errors, retry with `NO_ROFILES=1`.
 3. `scripts/lint.sh` (manifest, plus repo if `./repo` exists).
-4. `scripts/test-run.sh`. It restarts the KWin-launched host Fcitx5 and greps `fcitx5-diagnose`
-   (`out/fcitx5-diagnose.txt`).
+4. `scripts/test-run.sh`. It restarts the KWin-launched host Fcitx5 (InputMethod toggle and kwinrc restore),
+   checks over D-Bus that the addon and IM are registered, and runs the headless typing test (`scripts/probe-type.py`).
 5. Manual typing check: add OpenBangla in Fcitx5 config, then type `ami banglay gan gai`, expecting
    `আমি বাংলায় গান গাই`. Test a Flatpak app (Kate) and a native app.
 
