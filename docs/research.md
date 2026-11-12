@@ -117,3 +117,32 @@ _Phase 1 results go here (step, date, PASS/FAIL, evidence)._
 | 1.3 offline cargo sources | **PASS** (2026-11-12) | `scripts/gen-cargo-sources.sh`: riti lock generated (45 pkgs; okkhor 0.8.2, once_cell 1.20.3 pinned by semver), 91 source entries; platform 209 entries. `cargo fetch --locked` then `cargo build --release --locked --offline` of riti → `libriti.a` (cargo 1.99.1). Only riti is needed for the engine-only build, because `src/platform` is linked only by the GUI. |
 | 1.4 runtime typing test | **PASS (headless)**; in-app pending user | `probe-install.sh engine` (manifest-free `build-export` of the staged files, installed `--user` from local remote `obk-probe`). The host Fcitx5 mounts `/app/addons/OpenBangla`, `ldd` is clean, and Controller1 lists addon `openbangla` and IM `openbangla` ("OpenBangla Keyboard", icon `openbangla-keyboard`). `scripts/probe-type.py` (D-Bus input-context frontend): `ami banglay gan gai` → `আমি বাংলায় গান গাই` **PASS** with no config (default Avro Phonetic); `amar sonar bangla, ami tomay valobasi.` → `আমার সোনার বাংলা, আমি তমায় ভালবাসি।`. A hand-written `~/.var/app/org.fcitx.Fcitx5/config/OpenBangla/Keyboard.conf` with `[layout] path=/app/addons/OpenBangla/share/openbangla-keyboard/layouts/Probhat.json` + `ReloadAddonConfig` → `kj` = `কজ` (fixed layout works without the GUI). User data dir: `~/.var/app/org.fcitx.Fcitx5/data/openbangla-keyboard`. The engine emits precomposed U+09DF য়, so compare under NFC. **Still to do (user):** typing in real apps (Kate Flatpak, native Qt/GTK, XWayland) and the tray icon. |
 | 1.5 Qt6 GUI port sizing | **PASS** (2026-11-12) | Branch `probe/qt6` (`docs/probes/0002`): **7 files, +14/−11**. Changes: `find_package(QT NAMES Qt6 Qt5)` + `Qt${QT_VERSION_MAJOR}::` targets; `QStringRef`→`auto` and `contains(QLatin1String(..))` in LayoutConverter; `#include <QActionGroup>` in TopBar; `QJsonValue::toVariant()` in AutoCorrectDialog. Also fixes an upstream bug exposed by Qt6: `configure_file("${CMAKE_MODULE_PATH}/cmake_uninstall.cmake.in")` breaks once `CMAKE_MODULE_PATH` is a list, so it now uses `${CMAKE_SOURCE_DIR}/cmake`. Builds against Qt 6.11.3 with only deprecation warnings (QMouseEvent x/y, StandardPath). `openbangla-gui` runs in the Fcitx5 sandbox (offscreen, alive at 8 s) and writes `~/.var/app/org.fcitx.Fcitx5/config/OpenBangla/Keyboard.conf`, the same file the engine reads. It is not on the sandbox PATH (only the fcitx5 wrapper adds addon `bin/`), but fcitx's ExternalOption uses the absolute `BIN_DIR`. `--setup-system`/PlatformConfig only runs on that explicit flag. |
+
+## 6. Reliability / pressure testing (2026-11-12)
+User report (KDE Wayland, probe add-on installed): typing Bangla works, but it is "unreliable, suddenly will
+switch to english", and there is no tray icon. (The user also removed openbangla from the IM list mid-test,
+which explains the spurious losses in the runs against the live daemon.)
+
+**Tooling:** `scripts/stress-ime.py` (D-Bus input-context frontend; scenarios shift-tap, new-ic, refocus, soak, burst;
+tracks the test context's own IM via its `CurrentIM` signal) and `scripts/stress-isolated.sh` (private
+`dbus-run-session`, private XDG dirs set **inside** the sandbox, only addons dbus,dbusfrontend,keyboard,openbangla).
+
+| Scenario | Fcitx5 default config | Hardened (`[Hotkey/AltTriggerKeys]` empty, `ShareInputState=All`) |
+| --- | --- | --- |
+| shift-tap (Left Shift alone, 30/100/200/400 ms) | **FAIL**: 30–200 ms taps switch to keyboard-us; 400 ms does not (modifier-only timeout) | PASS |
+| new-ic (second context = new window/app) | **FAIL**: new context starts in keyboard-us | PASS |
+| refocus ×500 | PASS | PASS |
+| soak: 20k random keys (letters, Shift+caps, space, BS, arrows/Tab, punctuation, digits, Return, Ctrl+BS) | PASS: 0 losses, 0 D-Bus errors, worst 1.2 ms, RSS 21.6→21.9 MB | PASS (worst 3.7 ms) |
+| burst: 4,800 keys / 800 words | PASS: 800/800 committed, 0.80 ms/key | PASS |
+
+**Conclusion (pending expert review):** the engine is stable under load. The "switches to English" symptoms come from two
+Fcitx5 *defaults* (Left-Shift AltTrigger; per-context input state), not from the add-on.
+
+**Incidents during testing (fixed):**
+- Flatpak overrides `XDG_CONFIG_HOME`/`XDG_DATA_HOME` even with `--env`, so the first "isolated" runs used the
+  user's real Fcitx5 dirs. They re-saved an unchanged profile, left an empty `profile_XXXX` temp file, and,
+  together with the earlier soak runs on the live daemon, filled `data/openbangla-keyboard/phonetic-candidate-selection.json`
+  with 90 junk entries. Cleaned up (junk kept at `out/evidence/`, the user's data file removed, Fcitx5 restarted to drop
+  in-memory state). The runner now exports the XDG dirs inside the sandbox and refuses to start otherwise; a before/after
+  fingerprint of the user's Fcitx5 config and data dirs was identical across the fixed runs.
+- Anomaly under review: some learned selections show duplicated output (`bei → 🅱️েই🅱️েই`, `vei → vেইvেই`).
