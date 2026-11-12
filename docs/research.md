@@ -99,10 +99,21 @@ From the human-written manifests at github.com/flathub/org.fcitx.Fcitx5.Addon.{U
 ## 5. Probe log
 _Phase 1 results go here (step, date, PASS/FAIL, evidence)._
 
+**Code reading (2026-11-12), `src/engine/fcitx/openbangla.cpp`:**
+- `populateConfig()` defaults `layoutPath = "avro_phonetic"` when no `layout/path` key exists.
+  With no `OpenBangla/Keyboard.conf`, the engine should type Avro Phonetic (verified in 1.4).
+- The config is read through `StandardPath::Type::Config` → `OpenBangla/Keyboard.conf`.
+  Inside the Fcitx5 sandbox that is `~/.var/app/org.fcitx.Fcitx5/config/OpenBangla/Keyboard.conf`,
+  so power users can hand-edit the INI keys (`layout/path`, `settings/...`) without the GUI.
+- The fcitx engine links only `Fcitx5::Core riti Pthread DL`. `src/shared` (Qt5::Core) is used by the
+  IBus engine and the GUI, and `src/platform` (second Rust crate) only by the GUI.
+- Probe patch (branch `probe/engine-only` in `upstream/`) adds `option(ENABLE_GUI ON)`, which gates
+  `find_package(Qt5)`, `src/platform`, `src/frontend` and `src/shared`. This is the draft for upstream PR-a.
+
 | Probe | Result | Evidence |
 | --- | --- | --- |
 | 1.1 build shell (KDE 6.11 SDK + fcitx headers + cargo) | pending | |
 | 1.2 engine-only build | pending | |
-| 1.3 offline cargo sources | pending | |
+| 1.3 offline cargo sources | **PASS** (2026-11-12) | `scripts/gen-cargo-sources.sh`: riti lock generated (45 pkgs; okkhor 0.8.2, once_cell 1.20.3 pinned by semver), 91 source entries; platform 209 entries. `cargo fetch --locked` then `cargo build --release --locked --offline` of riti → `libriti.a` (cargo 1.99.1). Only riti is needed for the engine-only build, because `src/platform` is linked only by the GUI. |
 | 1.4 runtime typing test | pending | |
 | 1.5 Qt6 GUI port sizing | pending | |
