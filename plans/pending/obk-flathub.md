@@ -217,6 +217,10 @@ Verified when: the Flathub PR is merged, `flathub/org.fcitx.Fcitx5.Addon.OpenBan
 - 2026-11-12: Added manifest-free probe harnesses: `scripts/probe-build.sh`, `scripts/probe-install.sh` (local `obk-probe` remote), `scripts/probe-type.py` (headless D-Bus typing test).
 - 2026-11-12 (re-derive, for the user): the Qt6 GUI port is only 7 files / +14 −11 and runs in the sandbox. If upstream merges it, v1 could include the GUI instead of being engine-only.
 
+- 2026-11-12: User feedback: the tray icon is missing, and it "suddenly switches to English". Pressure tests and 3 expert reviews
+  traced the switching to Fcitx5 defaults, and also found upstream engine crash and text-loss bugs (docs/research.md §6.1).
+  Hardening plan: `plans/pending/obk-hardening.md`.
+
 ## Not yet specified
 - Phase 1.4: whether engine defaults are usable without the GUI. This decides v1's scope (Checkpoint A).
 - Phase 2: the maintainer's response, and whether upstream wants to own the Flathub add-on itself. If so, the user becomes co-maintainer or helper instead.
@@ -253,7 +257,8 @@ Verified when: the Flathub PR is merged, `flathub/org.fcitx.Fcitx5.Addon.OpenBan
 | 0 Environment + Claude setup | **done** 2026-11-12 (`devenv-setup.sh --check` green; repo pushed) |
 | 1 Feasibility probes | **done** 2026-11-12, all PASS (see docs/research.md §5); manual in-app typing + tray icon check pending user |
 | A Checkpoint | **in progress**, results presented 2026-11-12 |
-| 2 Upstream engagement | pending |
+| H Reliability hardening | **planned** 2026-11-12, see `plans/pending/obk-hardening.md` (user asked: plan only, execute later) |
+| 2 Upstream engagement | pending (fold in the hardening PRs, H5) |
 | 3 Packaging (user) | pending |
 | 4 Test matrix + interim bundle | pending |
 | 5 Flathub submission (user) | pending |
