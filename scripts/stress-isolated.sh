@@ -9,7 +9,7 @@
 #
 # --config default   Fcitx5 out-of-the-box behaviour (what new users get)
 # --config hardened  AltTriggerKeys (Left Shift tap) disabled + ShareInputState=All
-# --config recommended  hardened + ActiveByDefault=True + PreferTextIcon (what
+# --config recommended  hardened + ActiveByDefault=False + PreferTextIcon (what
 #                       scripts/fcitx-config.py --apply sets for users)
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
@@ -47,7 +47,7 @@ AltTriggerKeys=
 
 [Behavior]
 ShareInputState=All
-ActiveByDefault=True
+ActiveByDefault=False
 EOF2
     printf 'PreferTextIcon=True\n' > "$w/config/fcitx5/conf/classicui.conf"
 fi
