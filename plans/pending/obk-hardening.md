@@ -165,6 +165,12 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
 - 2026-11-14: Checkpoint B now runs on the **manifest-built** add-on (`local/` manifest, origin `openbangla-origin`):
   regression suite 15/15 PASS.
 
+- 2026-11-14, **D1 revised by the user:** `ActiveByDefault=True` made every restart come up in Bangla. The user wants the last state
+  remembered, which Fcitx5 5.1.23 can't do (the active state isn't saved, and `ActiveByDefault` seeds every new InputState). The user chose
+  **start in English** (`ActiveByDefault=False`) rather than a host-side helper. Applied live (backup `out/backup/20261114-022201`);
+  `fcitx-config.py` and the `recommended` test profile now use False; isolated shift-tap/new-ic/refocus/burst PASS (new windows follow the
+  shared state). Feature request posted upstream at the user's request: https://github.com/fcitx/fcitx5/issues/1727
+
 ## Always / Never
 - **Always:**
   - Back up before touching user config.

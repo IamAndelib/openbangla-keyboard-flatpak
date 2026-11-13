@@ -8,7 +8,8 @@ reloaded by Fcitx5 itself. No hand-editing of config files.
 Recommended (docs/research.md §6.1, verified in an isolated Fcitx5):
   global   Hotkey.AltTriggerKeys = []        Left-Shift tap no longer switches IM
            Behavior.ShareInputState = All    one Bangla/English state for all windows
-           Behavior.ActiveByDefault = True   start in the active IM (Bangla)
+           Behavior.ActiveByDefault = False  each session starts in English (the first IM);
+                                             Fcitx5 can't remember the last state across restarts
   classicui PreferTextIcon = True            tray shows the IM label (বা) instead of a
                                              missing icon (Flatpak add-ons can't export icons)
 Ctrl+Space (TriggerKeys) stays the toggle.
@@ -37,7 +38,7 @@ V = GLib.Variant
 GLOBAL = V("a{sv}", {
     "Hotkey": V("a{sv}", {"AltTriggerKeys": V("a{sv}", {})}),
     "Behavior": V("a{sv}", {"ShareInputState": V("s", "All"),
-                            "ActiveByDefault": V("s", "True")}),
+                            "ActiveByDefault": V("s", "False")}),
 })
 CLASSICUI = V("a{sv}", {"PreferTextIcon": V("s", "True")})
 
@@ -77,7 +78,7 @@ def show(fx):
 def is_recommended(g, ui):
     alt = g["Hotkey"].get("AltTriggerKeys")
     return (not alt and g["Behavior"].get("ShareInputState") == "All"
-            and g["Behavior"].get("ActiveByDefault") == "True"
+            and g["Behavior"].get("ActiveByDefault") == "False"
             and ui.get("PreferTextIcon") == "True")
 
 
