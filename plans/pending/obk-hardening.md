@@ -143,6 +143,10 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
   (`stress-ime.py --prepare`).
 - H2: the Debug line "Reload openbangla configuration" only appears when Keyboard.conf exists, so `reload-count` seeds one: 15 reloads for 10 words.
 
+- H3: riti's own `cargo fmt` baseline isn't clean, so formatting churn outside the changed hunks was reverted to keep the upstream diff minimal.
+  Each commit builds and tests on its own (46/46 after the first, 53/53 after the second). The panicking `utility::read()` was removed.
+  `catch_unwind` at the FFI boundary is **deferred**: every known panic site is fixed; revisit as defence in depth in H5.
+
 ## Always / Never
 - **Always:**
   - Back up before touching user config.
@@ -162,9 +166,9 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
 | Phase | Status |
 | --- | --- |
 | H0 History scrub | **done** 2026-11-14: username, scratch paths, session ID, `__pycache__` and AI trailers removed from history; force-pushed with lease (backup `out/pre-scrub.bundle`) |
-| H1 User config + text tray icon | **done** 2026-11-14: PR #1. Applied live via `scripts/fcitx-config.py --apply` (backup `out/backup/20261114-001416`); isolated `recommended` profile 4/4 PASS. **Tray icon (বা) awaits the user's visual confirmation** |
+| H1 User config + text tray icon | **done** 2026-11-14: PR #1. Applied live via `scripts/fcitx-config.py --apply` (backup `out/backup/20261114-001416`); isolated `recommended` profile 4/4 PASS. The user confirmed the tray icon shows correctly |
 | H2 Harness fidelity + regression scenarios | **done (RED)** 2026-11-14: `scripts/regress.sh` gives 9/10 FAIL for the documented reason on the unfixed build. `suffix-dup` (F5) does not reproduce over D-Bus, so it is covered by a riti unit test in H3 |
-| H3 riti fixes | planned |
+| H3 riti fixes | **done** 2026-11-14: riti branch `fix/robustness` (2 commits, exported to `docs/patches/riti/`). 9 new cargo tests RED→GREEN, 53/53 pass, no warnings. The isolated regression suite turns F1 and F3 (×4) green; F2/F4/F6/F7 remain for H4 |
 | H4 Engine fixes | planned |
 | B Patched daily build | planned |
 | H5 Upstream PR drafts | planned |
