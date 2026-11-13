@@ -136,6 +136,13 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
 - Whether the Flatpak Fcitx5 can bind `org_kde_plasma_window_management` (affects per-window contexts). The user can check with
   read-only `Controller1.DebugInfo`.
 
+## Execution notes
+- 2026-11-14: The user asked to go **milestone by milestone, in small steps**. Stop and report after each milestone.
+- H2: `missing-layout` was replaced by `invalid-layout`. A layout path that doesn't exist is safe, because riti keeps the previous layout; a torn
+  layout file aborts in `fixed/method.rs:109`. The seeded files must exist before the daemon starts, because riti reads them when the add-on loads
+  (`stress-ime.py --prepare`).
+- H2: the Debug line "Reload openbangla configuration" only appears when Keyboard.conf exists, so `reload-count` seeds one: 15 reloads for 10 words.
+
 ## Always / Never
 - **Always:**
   - Back up before touching user config.
@@ -154,9 +161,9 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
 ## Progress
 | Phase | Status |
 | --- | --- |
-| H0 History scrub | planned |
-| H1 User config + text tray icon | planned |
-| H2 Harness fidelity + regression scenarios | planned |
+| H0 History scrub | **done** 2026-11-14: username, scratch paths, session ID, `__pycache__` and AI trailers removed from history; force-pushed with lease (backup `out/pre-scrub.bundle`) |
+| H1 User config + text tray icon | **done** 2026-11-14: PR #1. Applied live via `scripts/fcitx-config.py --apply` (backup `out/backup/20261114-001416`); isolated `recommended` profile 4/4 PASS. **Tray icon (বা) awaits the user's visual confirmation** |
+| H2 Harness fidelity + regression scenarios | **done (RED)** 2026-11-14: `scripts/regress.sh` gives 9/10 FAIL for the documented reason on the unfixed build. `suffix-dup` (F5) does not reproduce over D-Bus, so it is covered by a riti unit test in H3 |
 | H3 riti fixes | planned |
 | H4 Engine fixes | planned |
 | B Patched daily build | planned |
