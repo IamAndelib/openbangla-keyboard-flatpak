@@ -259,7 +259,7 @@ Verified when: the Flathub PR is merged, `flathub/org.fcitx.Fcitx5.Addon.OpenBan
 | A Checkpoint | **in progress**, results presented 2026-11-12 |
 | H Reliability hardening | **planned** 2026-11-12, see `plans/pending/obk-hardening.md` (user asked: plan only, execute later) |
 | 2 Upstream engagement | **2.1 done** 2026-11-14: issue https://github.com/OpenBangla/OpenBangla-Keyboard/issues/487 (posted at the user's request, AI drafting disclosed). Waiting for the maintainer's response; then the PRs (H5) |
-| 3 Packaging (user) | pending |
+| 3 Packaging | **local manifest done** 2026-11-14 (`local/`, AI-written, never for Flathub): flatpak-builder build + lint clean + installed; 15/15 regression PASS. Next: the user hand-writes `flathub/` (Claude teaches from Flathub's human-written add-on manifests) |
 | 4 Test matrix + interim bundle | pending |
 | 5 Flathub submission (user) | pending |
 | 6 Maintenance | ongoing |

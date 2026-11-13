@@ -201,3 +201,13 @@ ActiveByDefault=True
 
 Reviewer reproductions are in the session scratchpad (`repro/repro.c`, `e2e/e2e.py`, `extra.py`, `harness/`, `iso.sh`). Copy them
 into `tests/` if adopted.
+
+### 6.2 Memory (F8) diagnosis (2026-11-14)
+| Scenario (isolated, 12 × 25k keys) | RSS KiB per chunk | Slope after warm-up |
+| --- | --- | --- |
+| `rss-slope`: random keys | 21856, 24996, 24996, 28132, 28288, 28932, 29540, 36432, 37028, 37620, 38248, 38844 | 1597 KiB/25k (FAIL) |
+| `rss-vocab`: 2,000-word vocabulary | 21992, 20968, 20968, … 20968 | 0 KiB/25k (PASS) |
+
+Cause: riti `PhoneticSuggestion.cache` (`src/phonetic/suggestion.rs:221-233`) caches dictionary results for every distinct word
+(and prefix) and is never trimmed. Bounded in real use; unbounded for random input. This is not a leak. A possible upstream
+improvement is an LRU bound.

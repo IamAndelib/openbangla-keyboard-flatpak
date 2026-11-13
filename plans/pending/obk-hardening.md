@@ -158,6 +158,13 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
   the name. Fix: OBK branch `fix/tray-icon-sandbox` (`docs/patches/obk/0002`) builds the tray icon from pixmaps when
   `/.flatpak-info` exists. probe-tray FAIL→PASS; fast regression suite 10/10. Included in `probe/daily`.
 
+- 2026-11-14, F8 (memory) diagnosed: **not a leak.** `rss-slope` (300k random keys) grew 21.9 → 38.8 MB, about 1.6 MB per 25k keys.
+  `rss-vocab` (the same volume from a 2,000-word vocabulary) stayed flat at 20,968 KiB after warm-up. Cause: riti's
+  `PhoneticSuggestion.cache` (`suggestion.rs:233`) stores every distinct word/prefix looked up and is never evicted; random
+  strings are almost always new. Real typing is bounded by vocabulary. Optional upstream improvement: bound the cache (LRU).
+- 2026-11-14: Checkpoint B now runs on the **manifest-built** add-on (`local/` manifest, origin `openbangla-origin`):
+  regression suite 15/15 PASS.
+
 ## Always / Never
 - **Always:**
   - Back up before touching user config.
