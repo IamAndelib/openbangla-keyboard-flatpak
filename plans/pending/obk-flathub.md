@@ -258,7 +258,7 @@ Verified when: the Flathub PR is merged, `flathub/org.fcitx.Fcitx5.Addon.OpenBan
 | 1 Feasibility probes | **done** 2026-11-12, all PASS (see docs/research.md §5); manual in-app typing + tray icon check pending user |
 | A Checkpoint | **in progress**, results presented 2026-11-12 |
 | H Reliability hardening | **planned** 2026-11-12, see `plans/pending/obk-hardening.md` (user asked: plan only, execute later) |
-| 2 Upstream engagement | pending (fold in the hardening PRs, H5) |
+| 2 Upstream engagement | **2.1 done** 2026-11-14: issue https://github.com/OpenBangla/OpenBangla-Keyboard/issues/487 (posted at the user's request, AI drafting disclosed). Waiting for the maintainer's response; then the PRs (H5) |
 | 3 Packaging (user) | pending |
 | 4 Test matrix + interim bundle | pending |
 | 5 Flathub submission (user) | pending |
