@@ -5,17 +5,19 @@
 # Nothing the user does on the desktop can interfere, and the user's real
 # Fcitx5, config and input method are never touched.
 #
-#   scripts/stress-isolated.sh [--config default|hardened] [stress-ime.py args...]
+#   scripts/stress-isolated.sh [--config default|hardened|recommended] [stress-ime.py args...]
 #
 # --config default   Fcitx5 out-of-the-box behaviour (what new users get)
 # --config hardened  AltTriggerKeys (Left Shift tap) disabled + ShareInputState=All
+# --config recommended  hardened + ActiveByDefault=True + PreferTextIcon (what
+#                       scripts/fcitx-config.py --apply sets for users)
 # shellcheck source=scripts/lib.sh
 source "$(dirname "$0")/lib.sh"
 ensure_container "$0" "$@"
 
 profile="default"
 if [[ "${1:-}" == "--config" ]]; then profile="$2"; shift 2; fi
-[[ "$profile" == default || "$profile" == hardened ]] || die "--config default|hardened"
+[[ "$profile" =~ ^(default|hardened|recommended)$ ]] || die "--config default|hardened|recommended"
 
 w="$OUT_DIR/stress/$profile"
 rm -rf "$w"; mkdir -p "$w/config/fcitx5" "$w/data" "$w/cache"
@@ -34,6 +36,18 @@ Name=openbangla
 [GroupOrder]
 0="Group 1"
 EOF
+if [[ "$profile" == recommended ]]; then
+    mkdir -p "$w/config/fcitx5/conf"
+    cat > "$w/config/fcitx5/config" <<'EOF2'
+[Hotkey]
+AltTriggerKeys=
+
+[Behavior]
+ShareInputState=All
+ActiveByDefault=True
+EOF2
+    printf 'PreferTextIcon=True\n' > "$w/config/fcitx5/conf/classicui.conf"
+fi
 if [[ "$profile" == hardened ]]; then
     cat > "$w/config/fcitx5/config" <<'EOF'
 [Hotkey/AltTriggerKeys]
