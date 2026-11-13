@@ -13,7 +13,7 @@ CHECK_ONLY=0
 
 DNF_PKGS=(flatpak flatpak-builder rust cargo python3-aiohttp python3-tomlkit
           gh jq git desktop-file-utils appstream python3-gobject rustfmt
-          git-filter-repo)
+          git-filter-repo patch)
 USER_REFS=(org.kde.Sdk//6.11
            org.freedesktop.Sdk.Extension.rust-stable//25.08
            org.flatpak.Builder//stable)

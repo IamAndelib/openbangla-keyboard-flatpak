@@ -1,0 +1,78 @@
+# ============================================================================
+# AI-GENERATED (Claude). FOR LOCAL BUILDS AND TESTING ONLY.
+# Do NOT submit this file, or anything derived from it, to Flathub: Flathub
+# forbids AI-generated or AI-assisted manifests, even if a human reviews or
+# edits them. The Flathub manifest is hand-written in flathub/ (see local/README.md).
+# ============================================================================
+#
+# OpenBangla Keyboard as an add-on for Flathub's Fcitx5 (org.fcitx.Fcitx5).
+# Build: MANIFEST=local/org.fcitx.Fcitx5.Addon.OpenBangla.yml scripts/build.sh
+#
+# Upstream source: OpenBangla-Keyboard develop @ eea66af (riti @ afee54a),
+# plus the workspace's not-yet-upstreamed patches (docs/probes, docs/patches).
+
+id: org.fcitx.Fcitx5.Addon.OpenBangla
+branch: stable
+runtime: org.fcitx.Fcitx5
+runtime-version: stable
+sdk: org.kde.Sdk//6.11
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+build-extension: true
+separate-locales: false
+# Upstream ships an "inputmethod" metainfo, not an add-on one yet (asked upstream in #487).
+appstream-compose: false
+
+build-options:
+  prefix: /app/addons/OpenBangla
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/openbangla-keyboard/cargo
+    CARGO_NET_OFFLINE: 'true'
+
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - '*.la'
+  # Extensions can't export these to the host; they'd only be dead weight.
+  - /share/applications
+  - /share/pixmaps
+
+modules:
+  - name: openbangla-keyboard
+    buildsystem: cmake-ninja
+    builddir: true  # upstream CMake refuses in-source builds
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DENABLE_FCITX=ON
+      - -DENABLE_GUI=ON
+    # flatpak-builder records the source's LICENSE file automatically.
+    sources:
+      - type: git
+        url: https://github.com/OpenBangla/OpenBangla-Keyboard.git
+        commit: eea66aff18ac14cc43fa1273afd68729be5b5e67
+        # Fetches the riti and corrosion submodules at the commits pinned above.
+
+      # riti has no Cargo.lock upstream; offline builds need one.
+      - type: file
+        path: riti-Cargo.lock
+        dest: src/engine/riti
+        dest-filename: Cargo.lock
+      - cargo-sources-riti.json
+      - cargo-sources-platform.json
+
+      # Not yet upstream (OpenBangla/OpenBangla-Keyboard#487):
+      - type: patch
+        path: ../docs/probes/0001-engine-only-ENABLE_GUI.patch
+      - type: patch
+        path: ../docs/probes/0002-qt6-port.diff
+      - type: patch
+        path: ../docs/patches/obk/0001-fcitx-fix-crash-with-two-input-contexts-lost-words-a.patch
+      - type: patch
+        path: ../docs/patches/obk/0002-frontend-show-the-tray-icon-when-running-inside-Flat.patch
+      - type: patch
+        path: ../docs/patches/riti/0001-Fix-crash-and-doubled-values-in-suffix-derived-selec.patch
+        options: [-d, src/engine/riti]
+      - type: patch
+        path: ../docs/patches/riti/0002-Don-t-abort-the-input-method-on-damaged-or-unwritabl.patch
+        options: [-d, src/engine/riti]

@@ -59,5 +59,7 @@ find_manifest() {
 }
 
 flatpak_builder_lint() {
-    flatpak run --command=flatpak-builder-lint org.flatpak.Builder "$@"
+    # The linter is itself a Flatpak: give it access to the workspace (it keeps
+    # a ccache/state dir next to the manifest).
+    flatpak run --filesystem="$ROOT" --command=flatpak-builder-lint org.flatpak.Builder "$@"
 }
