@@ -28,7 +28,8 @@ Regression scenarios (docs/research.md §6.1)
   suffix-dup        F5  learned selections must not store doubled values
   deactivate-midword F6 switching IM mid-word must commit the pending word
   reload-count      F7  Keyboard.conf must not be re-read at every word start [seeded]
-  rss-slope         F8  RSS growth per 25k keys must stay under a threshold
+  rss-slope         F8  RSS growth per 25k random keys (unbounded riti word cache: grows)
+  rss-vocab         F8  same, but words from a fixed vocabulary (real typing): must stay flat
   selection-growth  F9  (info) size of the learned-selection file after N keys
 [seeded] scenarios prepare files BEFORE the daemon starts (riti reads them when
 the add-on loads, which happens at startup when openbangla is in the profile):
@@ -563,6 +564,34 @@ def sc_rss_slope(fx, ic, a):
     return slope < a.rss_slope, f"RSS KiB per chunk {samples}; slope {slope:.0f} KiB/25k keys (limit {a.rss_slope})"
 
 
+def sc_rss_vocab(fx, ic, a):
+    """F8 control: same key volume as rss-slope, but words drawn from a fixed
+    vocabulary (--vocab words), like real typing. riti caches every distinct
+    word it has looked up, so random typing grows memory and a bounded vocabulary must not."""
+    assert activate(fx, ic)
+    rng = random.Random(a.seed)
+    vocab = ["".join(rng.choice(ALPHA) for _ in range(rng.randint(2, 8))) for _ in range(a.vocab)]
+    pid = fx.alive()
+    samples = []
+    for chunk in range(a.chunks):
+        typed = 0
+        while typed < 25000:
+            w = rng.choice(vocab)
+            ic.type(w + " ")
+            typed += len(w) + 1
+        pump(5)
+        samples.append(rss_kib(pid))
+        if fx.alive() != pid:
+            return False, f"daemon changed/died after chunk {chunk}"
+    ys = samples[2:]  # first pass over the vocabulary fills the cache
+    n = len(ys)
+    xbar, ybar = (n - 1) / 2, sum(ys) / n
+    slope = (sum((i - xbar) * (y - ybar) for i, y in enumerate(ys))
+             / max(1e-9, sum((i - xbar) ** 2 for i in range(n))))
+    return slope < a.rss_slope, (f"{a.vocab}-word vocabulary; RSS KiB per chunk {samples}; "
+                                 f"slope after warm-up {slope:.0f} KiB/25k keys (limit {a.rss_slope})")
+
+
 def sc_selection_growth(fx, ic, a):
     """F9 (info): learned-selection file size after N random keys."""
     assert activate(fx, ic)
@@ -584,7 +613,8 @@ SCENARIOS = {
     "invalid-layout": sc_invalid_layout, "torn-autocorrect": sc_torn_autocorrect,
     "page-commit": sc_page_commit, "suffix-dup": sc_suffix_dup,
     "deactivate-midword": sc_deactivate_midword, "reload-count": sc_reload_count,
-    "rss-slope": sc_rss_slope, "selection-growth": sc_selection_growth,
+    "rss-slope": sc_rss_slope, "rss-vocab": sc_rss_vocab,
+    "selection-growth": sc_selection_growth,
 }
 SEEDS = {"corrupt-selection": seed_corrupt_selection,
          "unwritable-selection": seed_unwritable_selection,
@@ -603,6 +633,7 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--chunks", type=int, default=6, help="rss-slope: number of 25k-key chunks")
     ap.add_argument("--rss-slope", type=float, default=256.0, help="rss-slope: KiB per 25k keys")
+    ap.add_argument("--vocab", type=int, default=2000, help="rss-vocab: vocabulary size")
     ap.add_argument("--caps", type=lambda s: int(s, 0), default=WAYLAND_CAPS)
     ap.add_argument("--check-every", type=int, default=50,
                     help="soak: check the context's IM every N keys (1 = after every key)")
