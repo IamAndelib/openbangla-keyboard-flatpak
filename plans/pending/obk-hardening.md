@@ -152,6 +152,12 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
   switching into a password field (CapabilityChanged) also commits, as pinyin/hangul do.
 - H4: `upstream/OpenBangla-Keyboard` branch `probe/daily` is what's installed as `obk-probe` (riti submodule working tree at `fix/robustness`).
 
+- 2026-11-14 (Checkpoint B feedback): the settings app's tray icon showed as an empty slot. Root cause, verified with
+  `scripts/probe-tray.sh`: launched from Fcitx5's configure button, the app finds `openbangla-keyboard` in the add-on's
+  icon theme, so Qt's StatusNotifierItem publishes only `IconName` with an empty `IconPixmap`, and the host can't resolve
+  the name. Fix: OBK branch `fix/tray-icon-sandbox` (`docs/patches/obk/0002`) builds the tray icon from pixmaps when
+  `/.flatpak-info` exists. probe-tray FAIL→PASS; fast regression suite 10/10. Included in `probe/daily`.
+
 ## Always / Never
 - **Always:**
   - Back up before touching user config.
