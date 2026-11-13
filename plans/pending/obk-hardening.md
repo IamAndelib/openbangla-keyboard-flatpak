@@ -147,6 +147,11 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
   Each commit builds and tests on its own (46/46 after the first, 53/53 after the second). The panicking `utility::read()` was removed.
   `catch_unwind` at the FFI boundary is **deferred**: every known panic site is fixed; revisit as defence in depth in H5.
 
+- H4: deactivate() commits only on `InputContextSwitchInputMethod` (the fcitx5-hangul/pinyin pattern). On focus-out, clients with
+  ClientUnfocusCommit commit the preedit. Known, pre-existing and not fixed: with preedit disabled, a word in progress is lost on focus-out;
+  switching into a password field (CapabilityChanged) also commits, as pinyin/hangul do.
+- H4: `upstream/OpenBangla-Keyboard` branch `probe/daily` is what's installed as `obk-probe` (riti submodule working tree at `fix/robustness`).
+
 ## Always / Never
 - **Always:**
   - Back up before touching user config.
@@ -169,7 +174,7 @@ Make `stress-ime.py` able to fail on every known bug before any fix lands.
 | H1 User config + text tray icon | **done** 2026-11-14: PR #1. Applied live via `scripts/fcitx-config.py --apply` (backup `out/backup/20261114-001416`); isolated `recommended` profile 4/4 PASS. The user confirmed the tray icon shows correctly |
 | H2 Harness fidelity + regression scenarios | **done (RED)** 2026-11-14: `scripts/regress.sh` gives 9/10 FAIL for the documented reason on the unfixed build. `suffix-dup` (F5) does not reproduce over D-Bus, so it is covered by a riti unit test in H3 |
 | H3 riti fixes | **done** 2026-11-14: riti branch `fix/robustness` (2 commits, exported to `docs/patches/riti/`). 9 new cargo tests RED→GREEN, 53/53 pass, no warnings. The isolated regression suite turns F1 and F3 (×4) green; F2/F4/F6/F7 remain for H4 |
-| H4 Engine fixes | planned |
+| H4 Engine fixes | **done** 2026-11-14: OBK branch `fix/engine-robustness` (1 commit on `develop`, exported to `docs/patches/obk/`). F2/F4/F6/F7 regression scenarios RED→GREEN. The independent fcitx5 review found no high/medium issues; its two low items (`==` mtime check, non-throwing `last_write_time`) are folded in. Daily build `probe/daily` = probe/qt6 + this fix, with riti `fix/robustness`: `scripts/regress.sh --behaviour` 15/15 PASS |
 | B Patched daily build | planned |
 | H5 Upstream PR drafts | planned |
 | H6 Docs | planned |
